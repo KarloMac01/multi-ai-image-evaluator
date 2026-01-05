@@ -22,7 +22,7 @@ A SvelteKit application that evaluates pharmaceutical/supplement product label i
 - **Frontend**: SvelteKit 5 + Tailwind CSS
 - **Backend**: SvelteKit API routes
 - **Database**: Pocketbase
-- **AI Services**: Gemini, Groq, Mistral, OpenAI, Google Cloud Vision
+- **AI Services**: Gemini, Groq, Claude, OpenAI, Google Cloud Vision
 
 ### Key Features
 1. Upload product label image
@@ -41,7 +41,7 @@ A SvelteKit application that evaluates pharmaceutical/supplement product label i
 |----------|-----------|----------|
 | Google Gemini | 1000 req/day, no CC | General analysis |
 | Groq | 14,400 req/day | Fastest inference |
-| Mistral | 500K tokens/min | Document understanding |
+| Claude | Usage-based | High accuracy, reasoning |
 | OpenAI | $5 credits | Highest accuracy |
 | Cloud Vision | 1000 units/month | Pure OCR |
 
@@ -56,7 +56,7 @@ A SvelteKit application that evaluates pharmaceutical/supplement product label i
 2. **Install**
    ```bash
    npx svelte-add@latest tailwindcss
-   npm install pocketbase @google/generative-ai groq-sdk @mistralai/mistralai openai @google-cloud/vision
+   npm install pocketbase @google/generative-ai groq-sdk @anthropic-ai/sdk openai @google-cloud/vision
    ```
 
 3. **Configure**

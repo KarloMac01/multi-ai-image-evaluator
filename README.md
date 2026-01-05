@@ -16,7 +16,7 @@ A SvelteKit application that evaluates pharmaceutical and supplement product lab
 - **Frontend**: SvelteKit 5 + Tailwind CSS
 - **Backend**: SvelteKit API routes
 - **Database**: [Pocketbase](https://pocketbase.io/)
-- **AI Services**: Google Gemini, Groq, Mistral, OpenAI, Google Cloud Vision
+- **AI Services**: Google Gemini, Groq, Anthropic Claude, OpenAI, Google Cloud Vision
 
 ## AI Providers
 
@@ -24,8 +24,8 @@ A SvelteKit application that evaluates pharmaceutical and supplement product lab
 |----------|-------|-----------|----------|
 | **Google Gemini** | Gemini 2.0 Flash | 1000 req/day, no CC | General analysis, OCR |
 | **Groq** | Llama 4 Scout | 14,400 req/day | Fastest inference |
-| **Mistral** | Pixtral 12B | 500K tokens/min | Document understanding |
-| **OpenAI** | GPT-4o Mini | $5 credits (3 months) | Highest accuracy |
+| **Anthropic Claude** | Claude 3.5 Sonnet | Paid (usage-based) | High accuracy, reasoning |
+| **OpenAI** | GPT-4o Mini | $5 credits (3 months) | Balanced accuracy |
 | **Cloud Vision** | Document Text Detection | 1000 units/month | Pure OCR |
 
 ## Quick Start
@@ -61,7 +61,7 @@ POCKETBASE_SERVER_API_KEY=your_server_key
 # AI API Keys (get from respective provider dashboards)
 GEMINI_API_KEY=your_gemini_key
 GROQ_API_KEY=your_groq_key
-MISTRAL_API_KEY=your_mistral_key
+ANTHROPIC_API_KEY=your_anthropic_key
 OPENAI_API_KEY=your_openai_key
 GOOGLE_CLOUD_API_KEY=your_cloud_vision_key
 ```
@@ -96,7 +96,7 @@ src/
 │   ├── ai/              # AI service adapters
 │   │   ├── gemini.ts
 │   │   ├── groq.ts
-│   │   ├── mistral.ts
+│   │   ├── claude.ts
 │   │   ├── openai.ts
 │   │   └── cloudvision.ts
 │   ├── pocketbase/      # Database client and types
@@ -142,9 +142,9 @@ Detailed documentation is available in the `/docs` folder:
 1. Go to https://console.groq.com/
 2. Sign up → API Keys → Create key
 
-### Mistral (Free, No CC)
-1. Go to https://console.mistral.ai/
-2. Sign up → API Keys → Generate key
+### Anthropic Claude (Paid, Usage-Based)
+1. Go to https://console.anthropic.com/
+2. Sign up → API Keys → Create Key
 
 ### OpenAI ($5 Credits)
 1. Go to https://platform.openai.com/

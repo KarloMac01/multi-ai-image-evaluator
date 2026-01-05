@@ -26,7 +26,7 @@ export class GeminiService extends BaseAIService {
 		return this.client;
 	}
 
-	protected async callAPI(imageBase64: string, mimeType: string): Promise<string> {
+	protected async callAPI(imageBase64: string, mimeType: string, prompt: string): Promise<string> {
 		const client = this.getClient();
 
 		// Use Gemini 2.0 Flash for best balance of speed and capability
@@ -46,7 +46,7 @@ export class GeminiService extends BaseAIService {
 		};
 
 		const result = await withRetry(async () => {
-			const response = await model.generateContent([this.getPrompt(), imagePart]);
+			const response = await model.generateContent([prompt, imagePart]);
 			return response.response.text();
 		});
 

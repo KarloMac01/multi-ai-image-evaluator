@@ -26,7 +26,7 @@ multi-ai-image-evaluator/
 │   │   │   ├── prompt.ts           # Extraction prompt template
 │   │   │   ├── gemini.ts           # Google Gemini adapter
 │   │   │   ├── groq.ts             # Groq (Llama 4) adapter
-│   │   │   ├── mistral.ts          # Mistral Pixtral adapter
+│   │   │   ├── claude.ts           # Anthropic Claude adapter
 │   │   │   ├── openai.ts           # OpenAI GPT-4o adapter
 │   │   │   └── cloudvision.ts      # Google Cloud Vision adapter
 │   │   │
@@ -102,7 +102,7 @@ multi-ai-image-evaluator/
 | `prompt.ts` | Contains the standardized extraction prompt template |
 | `gemini.ts` | Google Gemini API integration |
 | `groq.ts` | Groq API integration (Llama 4 vision) |
-| `mistral.ts` | Mistral API integration (Pixtral) |
+| `claude.ts` | Anthropic Claude API integration |
 | `openai.ts` | OpenAI API integration (GPT-4o) |
 | `cloudvision.ts` | Google Cloud Vision API integration |
 

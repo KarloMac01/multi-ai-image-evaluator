@@ -2,7 +2,7 @@ import type { AIService, AIServiceResult } from './types';
 import type { AIProvider, ExtractedData } from '$lib/pocketbase/types';
 import { parseAIResponse, cleanResponse, validateExtractedData } from '$lib/utils/parsing';
 import { withTiming } from '$lib/utils/timing';
-import { EXTRACTION_PROMPT } from './prompt';
+import { EXTRACTION_PROMPT, getExtractionPromptForProvider } from './prompt';
 
 /**
  * Base class for AI service implementations
@@ -17,8 +17,11 @@ export abstract class BaseAIService implements AIService {
 	/**
 	 * Make the actual API call to the AI service
 	 * Must be implemented by each provider
+	 * @param imageBase64 - Base64 encoded image
+	 * @param mimeType - Image MIME type
+	 * @param prompt - The extraction prompt to use
 	 */
-	protected abstract callAPI(imageBase64: string, mimeType: string): Promise<string>;
+	protected abstract callAPI(imageBase64: string, mimeType: string, prompt: string): Promise<string>;
 
 	/**
 	 * Analyze an image and extract product label data
@@ -38,8 +41,11 @@ export abstract class BaseAIService implements AIService {
 		}
 
 		try {
+			// Fetch the active prompt for this provider
+			const prompt = await this.getPromptAsync();
+
 			const { result: rawResponse, endTime, durationMs } = await withTiming(() =>
-				this.callAPI(imageBase64, mimeType)
+				this.callAPI(imageBase64, mimeType, prompt)
 			);
 
 			const cleanedResponse = cleanResponse(rawResponse);
@@ -95,7 +101,14 @@ export abstract class BaseAIService implements AIService {
 	}
 
 	/**
-	 * Get the extraction prompt
+	 * Get the extraction prompt for this provider (async - fetches from DB)
+	 */
+	protected async getPromptAsync(): Promise<string> {
+		return getExtractionPromptForProvider(this.name);
+	}
+
+	/**
+	 * Get the default extraction prompt (sync - for backward compatibility)
 	 */
 	protected getPrompt(): string {
 		return EXTRACTION_PROMPT;

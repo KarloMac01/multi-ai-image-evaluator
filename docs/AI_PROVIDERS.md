@@ -71,40 +71,42 @@ GROQ_API_KEY=your_api_key_here
 
 ---
 
-## 3. Mistral (Pixtral 12B)
+## 3. Anthropic Claude (Claude 3.5 Sonnet)
 
 ### Overview
-Mistral's Pixtral models are purpose-built for document and image understanding with strong OCR capabilities.
+Anthropic's Claude models offer exceptional reasoning and image understanding capabilities with strong safety features.
 
-### Free Tier Limits
-- **Rate Limit**: 1 request/second
-- **Tokens**: 500,000 tokens/minute
-- **No credit card required** (La Plateforme free tier)
+### Pricing
+- **Usage-based pricing** (no free tier)
+- **Claude 3.5 Sonnet**: $3/1M input tokens, $15/1M output tokens
+- **Claude Sonnet 4**: $3/1M input tokens, $15/1M output tokens
 
 ### API Setup
 ```bash
-npm install @mistralai/mistralai
+npm install @anthropic-ai/sdk
 ```
 
 ### Get API Key
-1. Go to https://console.mistral.ai/
-2. Create free account
+1. Go to https://console.anthropic.com/
+2. Create an account
 3. Navigate to API Keys
-4. Generate new key
+4. Create new key
 
 ### Environment Variable
 ```env
-MISTRAL_API_KEY=your_api_key_here
+ANTHROPIC_API_KEY=your_api_key_here
 ```
 
 ### Vision Models Available
-- `pixtral-12b-2409` (free tier)
-- `pixtral-large-latest` (paid)
+- `claude-sonnet-4-20250514` (recommended)
+- `claude-3-5-sonnet-20241022`
+- `claude-3-opus-20240229` (most capable)
 
 ### Best For
-- Document understanding
-- Complex table/chart extraction
-- Multi-language labels
+- High accuracy extraction
+- Complex reasoning about label contents
+- Medical/pharmaceutical terminology
+- Nuanced interpretation
 
 ---
 
@@ -188,13 +190,13 @@ GOOGLE_APPLICATION_CREDENTIALS=/path/to/credentials.json
 
 ## Comparison Matrix
 
-| Feature | Gemini | Groq | Mistral | OpenAI | Cloud Vision |
-|---------|--------|------|---------|--------|--------------|
-| Free requests/day | ~1000 | 14,400 | ~86,400 | Limited | ~33/day |
-| Credit card required | No | No | No | Yes | No |
+| Feature | Gemini | Groq | Claude | OpenAI | Cloud Vision |
+|---------|--------|------|--------|--------|--------------|
+| Free requests/day | ~1000 | 14,400 | Paid | Limited | ~33/day |
+| Credit card required | No | No | Yes | Yes | No |
 | Latency | Medium | Fastest | Medium | Slow | Fast |
 | OCR quality | Good | Good | Excellent | Excellent | Best |
-| Reasoning | Excellent | Good | Good | Excellent | None |
+| Reasoning | Excellent | Good | Excellent | Excellent | None |
 | JSON output | Yes | Yes | Yes | Yes | Native |
 
 ---

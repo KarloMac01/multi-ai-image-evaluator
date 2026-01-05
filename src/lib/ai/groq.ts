@@ -26,7 +26,7 @@ export class GroqService extends BaseAIService {
 		return this.client;
 	}
 
-	protected async callAPI(imageBase64: string, mimeType: string): Promise<string> {
+	protected async callAPI(imageBase64: string, mimeType: string, prompt: string): Promise<string> {
 		const client = this.getClient();
 
 		// Construct the data URL for the image
@@ -47,7 +47,7 @@ export class GroqService extends BaseAIService {
 							},
 							{
 								type: 'text',
-								text: this.getPrompt()
+								text: prompt
 							}
 						]
 					}

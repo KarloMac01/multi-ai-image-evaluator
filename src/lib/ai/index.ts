@@ -2,7 +2,7 @@ import type { AIService, AIServiceResult, OrchestratorResult } from './types';
 import type { AIProvider } from '$lib/pocketbase/types';
 import { geminiService } from './gemini';
 import { groqService } from './groq';
-import { mistralService } from './mistral';
+import { claudeService } from './claude';
 import { openaiService } from './openai';
 import { cloudVisionService } from './cloudvision';
 
@@ -12,7 +12,7 @@ import { cloudVisionService } from './cloudvision';
 export const aiServices: Record<AIProvider, AIService> = {
 	gemini: geminiService,
 	groq: groqService,
-	mistral: mistralService,
+	claude: claudeService,
 	openai: openaiService,
 	cloudvision: cloudVisionService
 };
@@ -70,7 +70,7 @@ export class AIOrchestrator {
 		return {
 			gemini: geminiService.isConfigured(),
 			groq: groqService.isConfigured(),
-			mistral: mistralService.isConfigured(),
+			claude: claudeService.isConfigured(),
 			openai: openaiService.isConfigured(),
 			cloudvision: cloudVisionService.isConfigured()
 		};
@@ -214,6 +214,6 @@ export type { AIService, AIServiceResult, OrchestratorResult } from './types';
 // Re-export individual services for direct access
 export { geminiService } from './gemini';
 export { groqService } from './groq';
-export { mistralService } from './mistral';
+export { claudeService } from './claude';
 export { openaiService } from './openai';
 export { cloudVisionService } from './cloudvision';

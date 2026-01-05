@@ -21,7 +21,7 @@ export class CloudVisionService extends BaseAIService {
 		return !!this.apiKey && this.apiKey.length > 0;
 	}
 
-	protected async callAPI(imageBase64: string, _mimeType: string): Promise<string> {
+	protected async callAPI(imageBase64: string, _mimeType: string, _prompt: string): Promise<string> {
 		const requestBody = {
 			requests: [
 				{

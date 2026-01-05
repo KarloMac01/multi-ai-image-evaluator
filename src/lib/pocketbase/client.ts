@@ -1,5 +1,6 @@
 import PocketBase from 'pocketbase';
 import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
+import { browser } from '$app/environment';
 import type {
 	Evaluation,
 	AIResult,
@@ -12,7 +13,23 @@ import type {
 
 // Client-side PocketBase instance
 export function createPocketBase(): PocketBase {
-	return new PocketBase(PUBLIC_POCKETBASE_URL);
+	const pb = new PocketBase(PUBLIC_POCKETBASE_URL);
+
+	// Load auth from cookie on browser
+	if (browser) {
+		pb.authStore.loadFromCookie(document.cookie);
+
+		// Keep auth store in sync with cookie changes
+		pb.authStore.onChange(() => {
+			document.cookie = pb.authStore.exportToCookie({
+				httpOnly: false,
+				sameSite: 'lax',
+				path: '/'
+			});
+		});
+	}
+
+	return pb;
 }
 
 // Singleton for client-side usage
@@ -22,6 +39,10 @@ export function getClientPB(): PocketBase {
 	if (!clientPB) {
 		clientPB = createPocketBase();
 	}
+	// Ensure auth is loaded from cookie on each call (in case cookie changed)
+	if (browser && clientPB) {
+		clientPB.authStore.loadFromCookie(document.cookie);
+	}
 	return clientPB;
 }
 
@@ -29,7 +50,8 @@ export function getClientPB(): PocketBase {
 export const COLLECTIONS = {
 	EVALUATIONS: 'evaluations',
 	AI_RESULTS: 'ai_results',
-	WEB_RESULTS: 'web_results'
+	WEB_RESULTS: 'web_results',
+	PROMPTS: 'prompts'
 } as const;
 
 // Type-safe collection helpers

@@ -1,1 +1,72 @@
 @import "tailwindcss";
+
+/* Custom breakpoint for extra small screens */
+@custom-media --xs (min-width: 475px);
+
+/* Global touch-friendly styles */
+@layer base {
+	/* Prevent text selection on interactive elements for mobile */
+	button,
+	a {
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	/* Ensure minimum touch target size */
+	button,
+	[role="button"],
+	input[type="submit"],
+	input[type="button"] {
+		min-height: 44px;
+	}
+
+	/* Smooth scrolling */
+	html {
+		scroll-behavior: smooth;
+	}
+
+	/* Better focus styles for accessibility */
+	:focus-visible {
+		outline: 2px solid theme(colors.blue.500);
+		outline-offset: 2px;
+	}
+}
+
+@layer utilities {
+	/* Touch manipulation for faster touch response */
+	.touch-manipulation {
+		touch-action: manipulation;
+	}
+
+	/* Hide scrollbar but keep functionality */
+	.scrollbar-hide {
+		-ms-overflow-style: none;
+		scrollbar-width: none;
+	}
+	.scrollbar-hide::-webkit-scrollbar {
+		display: none;
+	}
+
+	/* Safe area padding for notched devices */
+	.safe-top {
+		padding-top: env(safe-area-inset-top);
+	}
+	.safe-bottom {
+		padding-bottom: env(safe-area-inset-bottom);
+	}
+	.safe-left {
+		padding-left: env(safe-area-inset-left);
+	}
+	.safe-right {
+		padding-right: env(safe-area-inset-right);
+	}
+}
+
+/* Extra small breakpoint styles */
+@media (min-width: 475px) {
+	.xs\:inline {
+		display: inline;
+	}
+	.xs\:hidden {
+		display: none;
+	}
+}

@@ -42,7 +42,7 @@ Stores individual AI provider results for each evaluation.
 | Field Name | Type | Options | Description |
 |------------|------|---------|-------------|
 | `evaluation` | Relation | Collection: evaluations, Required | Link to parent evaluation |
-| `provider` | Select | gemini, groq, mistral, openai, cloudvision | AI provider name |
+| `provider` | Select | gemini, groq, claude, openai, cloudvision | AI provider name |
 | `status` | Select | pending, processing, completed, failed | Individual AI status |
 | `extracted_data` | JSON | | Full extracted data object |
 | `formulation` | JSON | | Extracted formulation details |
@@ -300,7 +300,7 @@ export interface Evaluation {
 export interface AIResult {
   id: string;
   evaluation: string;
-  provider: 'gemini' | 'groq' | 'mistral' | 'openai' | 'cloudvision';
+  provider: 'gemini' | 'groq' | 'claude' | 'openai' | 'cloudvision';
   status: 'pending' | 'processing' | 'completed' | 'failed';
   extracted_data?: ExtractedData;
   formulation?: Formulation;

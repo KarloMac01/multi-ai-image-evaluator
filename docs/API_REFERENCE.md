@@ -26,7 +26,7 @@ Submit an image for multi-AI evaluation.
 ```typescript
 const formData = new FormData();
 formData.append('image', imageFile);
-formData.append('providers', 'gemini,groq,mistral'); // optional
+formData.append('providers', 'gemini,groq,claude'); // optional
 
 const response = await fetch('/api/evaluate', {
   method: 'POST',
@@ -275,7 +275,7 @@ The API implements per-provider rate limiting:
 |----------|-------|--------|
 | Gemini | 15 requests | per minute |
 | Groq | 30 requests | per minute |
-| Mistral | 60 requests | per minute |
+| Claude | Varies by tier | per minute |
 | OpenAI | 60 requests | per minute |
 | Cloud Vision | 1800 requests | per minute |
 

@@ -14,7 +14,7 @@ Build a SvelteKit application that evaluates **pharmaceutical/supplement product
 |---|----------|-------|-----------|----------|
 | 1 | **Google Gemini** | Gemini 2.5 Flash | 1000 req/day, no CC required | General analysis, OCR |
 | 2 | **Groq** | Llama 4 Scout | 14,400 req/day, ultra-fast | Speed, structured output |
-| 3 | **Mistral** | Pixtral 12B | 500K tokens/min | Document understanding |
+| 3 | **Claude** | Claude 3.5 Sonnet | Usage-based pricing | High accuracy, reasoning |
 | 4 | **OpenAI** | GPT-4o Mini | $5 credits (3 months) | High accuracy extraction |
 | 5 | **Google Cloud Vision** | Vision API | 1,000 units/month | Specialized OCR |
 
@@ -63,7 +63,7 @@ Build a SvelteKit application that evaluates **pharmaceutical/supplement product
 - Implement each provider adapter:
   - `src/lib/ai/gemini.ts`
   - `src/lib/ai/groq.ts`
-  - `src/lib/ai/mistral.ts`
+  - `src/lib/ai/claude.ts`
   - `src/lib/ai/openai.ts`
   - `src/lib/ai/cloudvision.ts`
 - Add timing wrapper for each call

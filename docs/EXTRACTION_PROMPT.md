@@ -115,17 +115,18 @@ const response = await groq.chat.completions.create({
 });
 ```
 
-### Mistral (Pixtral)
+### Anthropic Claude
 ```typescript
-// Mistral handles document-style images well
-// Standard prompt works, may need to emphasize table extraction
-const response = await mistral.chat.complete({
-  model: 'pixtral-12b-2409',
+// Claude has excellent reasoning and accuracy
+// Use the messages API with vision
+const response = await anthropic.messages.create({
+  model: 'claude-sonnet-4-20250514',
+  max_tokens: 8192,
   messages: [
     {
       role: 'user',
       content: [
-        { type: 'image_url', imageUrl: base64Image },
+        { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64Image } },
         { type: 'text', text: prompt }
       ]
     }

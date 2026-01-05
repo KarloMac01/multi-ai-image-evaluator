@@ -43,7 +43,7 @@ export interface AIServiceConfig {
 export interface AIServicesConfig {
 	gemini: AIServiceConfig;
 	groq: AIServiceConfig;
-	mistral: AIServiceConfig;
+	claude: AIServiceConfig;
 	openai: AIServiceConfig;
 	cloudvision: AIServiceConfig;
 }

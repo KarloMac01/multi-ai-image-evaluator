@@ -1,7 +1,7 @@
 // Pocketbase Collection Types for Multi-AI Image Evaluator
 
 // AI Provider enum
-export type AIProvider = 'gemini' | 'groq' | 'mistral' | 'openai' | 'cloudvision';
+export type AIProvider = 'gemini' | 'groq' | 'claude' | 'openai' | 'cloudvision';
 
 // Evaluation status
 export type EvaluationStatus = 'pending' | 'processing' | 'completed' | 'failed';
@@ -15,6 +15,7 @@ export interface BaseRecord {
 
 // Evaluation collection
 export interface Evaluation extends BaseRecord {
+	user: string;
 	image: string;
 	product_name?: string;
 	status: EvaluationStatus;
@@ -159,7 +160,26 @@ export interface EvaluationWithResults extends Evaluation {
 	};
 }
 
+// Prompt type for different use cases
+export type PromptType = 'extraction' | 'formulation';
+
+// Prompt collection - stores customizable prompts per provider
+export interface Prompt extends BaseRecord {
+	name: string;
+	provider: AIProvider;
+	prompt_type: PromptType;
+	content: string;
+	is_active: boolean;
+	description?: string;
+}
+
 // Create/Update types (without id, created, updated)
 export type CreateEvaluation = Omit<Evaluation, keyof BaseRecord>;
 export type CreateAIResult = Omit<AIResult, keyof BaseRecord>;
 export type CreateWebResult = Omit<WebResult, keyof BaseRecord>;
+export type CreatePrompt = Omit<Prompt, keyof BaseRecord>;
+
+// Global app settings (runtime, not stored in Pocketbase)
+export interface AppSettings {
+	default_providers: AIProvider[];
+}

@@ -20,7 +20,7 @@ npx svelte-add@latest tailwindcss
 npm install pocketbase
 npm install @google/generative-ai
 npm install groq-sdk
-npm install @mistralai/mistralai
+npm install @anthropic-ai/sdk
 npm install openai
 npm install @google-cloud/vision
 ```
@@ -39,7 +39,7 @@ POCKETBASE_SERVER_API_KEY=your_server_api_key  # Generate with: openssl rand -he
 # AI API Keys (get from respective provider dashboards)
 GEMINI_API_KEY=your_gemini_key
 GROQ_API_KEY=your_groq_key
-MISTRAL_API_KEY=your_mistral_key
+ANTHROPIC_API_KEY=your_anthropic_key
 OPENAI_API_KEY=your_openai_key
 GOOGLE_CLOUD_API_KEY=your_google_cloud_key
 
@@ -53,7 +53,7 @@ POCKETBASE_URL=http://127.0.0.1:8090
 POCKETBASE_SERVER_API_KEY=
 GEMINI_API_KEY=
 GROQ_API_KEY=
-MISTRAL_API_KEY=
+ANTHROPIC_API_KEY=
 OPENAI_API_KEY=
 GOOGLE_CLOUD_API_KEY=
 ```
@@ -94,12 +94,12 @@ GOOGLE_CLOUD_API_KEY=
 4. Create key
 5. Copy to `GROQ_API_KEY`
 
-### Mistral (Free, No CC)
-1. Go to https://console.mistral.ai/
+### Anthropic Claude (Paid, Usage-Based)
+1. Go to https://console.anthropic.com/
 2. Sign up
 3. Go to API Keys
-4. Generate key
-5. Copy to `MISTRAL_API_KEY`
+4. Create key
+5. Copy to `ANTHROPIC_API_KEY`
 
 ### OpenAI ($5 Credits)
 1. Go to https://platform.openai.com/
@@ -159,7 +159,7 @@ Open http://localhost:5173
 ### "Rate limit exceeded"
 - Groq: Wait 1 minute, max 30 RPM
 - Gemini: Wait 1 minute, max 15 RPM
-- Mistral: Wait 1 second between requests
+- Claude: Rate limits vary by plan tier
 
 ### "CORS errors"
 - Pocketbase handles CORS automatically
