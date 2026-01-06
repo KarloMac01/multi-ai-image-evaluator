@@ -11,6 +11,7 @@
 | [SETUP.md](./SETUP.md) | Installation and setup guide |
 | [EXTRACTION_PROMPT.md](./EXTRACTION_PROMPT.md) | AI prompt strategy for label extraction |
 | [API_REFERENCE.md](./API_REFERENCE.md) | API endpoint documentation |
+| [ITERATIONS.md](./ITERATIONS.md) | Development iterations and improvements log |
 
 ---
 
