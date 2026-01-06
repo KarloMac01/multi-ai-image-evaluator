@@ -5,6 +5,12 @@
 	let isUploading = $state(false);
 	let error: string | null = $state(null);
 
+	// URL input mode
+	let uploadMode: 'file' | 'url' = $state('file');
+	let imageUrl = $state('');
+	let isLoadingUrl = $state(false);
+	let urlImageBlob: Blob | null = $state(null);
+
 	function handleDragOver(e: DragEvent) {
 		e.preventDefault();
 		isDragging = true;
@@ -61,10 +67,61 @@
 		files = null;
 		imagePreview = null;
 		error = null;
+		imageUrl = '';
+		urlImageBlob = null;
+	}
+
+	async function loadImageFromUrl() {
+		if (!imageUrl.trim()) {
+			error = 'Please enter an image URL';
+			return;
+		}
+
+		isLoadingUrl = true;
+		error = null;
+
+		try {
+			// Use our proxy endpoint to fetch the image
+			const response = await fetch('/api/fetch-image', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ url: imageUrl.trim() })
+			});
+
+			if (!response.ok) {
+				const data = await response.json();
+				throw new Error(data.error || 'Failed to fetch image');
+			}
+
+			const blob = await response.blob();
+
+			// Validate it's an image
+			if (!blob.type.startsWith('image/')) {
+				throw new Error('URL does not point to a valid image');
+			}
+
+			urlImageBlob = blob;
+
+			// Create preview
+			const reader = new FileReader();
+			reader.onload = (e) => {
+				imagePreview = e.target?.result as string;
+			};
+			reader.readAsDataURL(blob);
+		} catch (e) {
+			error = e instanceof Error ? e.message : 'Failed to load image from URL';
+			urlImageBlob = null;
+		} finally {
+			isLoadingUrl = false;
+		}
 	}
 
 	async function handleSubmit() {
-		if (!files || files.length === 0) {
+		// Check if we have either a file or a URL blob
+		const hasFile = files && files.length > 0;
+		const hasUrlBlob = urlImageBlob !== null;
+
+		if (!hasFile && !hasUrlBlob) {
 			error = 'Please select an image first';
 			return;
 		}
@@ -74,7 +131,15 @@
 
 		try {
 			const formData = new FormData();
-			formData.append('image', files[0]);
+
+			if (hasFile) {
+				formData.append('image', files![0]);
+			} else if (hasUrlBlob) {
+				// Create a File from the blob with a proper name
+				const fileName = imageUrl.split('/').pop()?.split('?')[0] || 'image.jpg';
+				const file = new File([urlImageBlob!], fileName, { type: urlImageBlob!.type });
+				formData.append('image', file);
+			}
 
 			const response = await fetch('/api/evaluate', {
 				method: 'POST',
@@ -118,7 +183,43 @@
 			Upload Product Label
 		</h2>
 
+		<!-- Upload Mode Toggle -->
 		{#if !imagePreview}
+			<div class="flex mb-4 border border-gray-200 rounded-lg overflow-hidden">
+				<button
+					type="button"
+					onclick={() => { uploadMode = 'file'; error = null; }}
+					class="flex-1 px-4 py-2.5 text-sm font-medium transition-colors {uploadMode === 'file'
+						? 'bg-blue-600 text-white'
+						: 'bg-gray-50 text-gray-700 hover:bg-gray-100'}"
+					style="touch-action: manipulation;"
+				>
+					<span class="flex items-center justify-center gap-2">
+						<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+						</svg>
+						Upload File
+					</span>
+				</button>
+				<button
+					type="button"
+					onclick={() => { uploadMode = 'url'; error = null; }}
+					class="flex-1 px-4 py-2.5 text-sm font-medium transition-colors {uploadMode === 'url'
+						? 'bg-blue-600 text-white'
+						: 'bg-gray-50 text-gray-700 hover:bg-gray-100'}"
+					style="touch-action: manipulation;"
+				>
+					<span class="flex items-center justify-center gap-2">
+						<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+						</svg>
+						From URL
+					</span>
+				</button>
+			</div>
+		{/if}
+
+		{#if !imagePreview && uploadMode === 'file'}
 			<!-- Drop Zone - Mobile optimized -->
 			<div
 				class="border-2 border-dashed rounded-lg p-6 sm:p-8 md:p-12 text-center transition-colors {isDragging
@@ -168,6 +269,48 @@
 					Supported formats: JPEG, PNG, WebP (Max 10MB)
 				</p>
 			</div>
+		{:else if !imagePreview && uploadMode === 'url'}
+			<!-- URL Input -->
+			<div class="border-2 border-dashed border-gray-300 rounded-lg p-6 sm:p-8">
+				<div class="max-w-lg mx-auto">
+					<label for="image-url" class="block text-sm font-medium text-gray-700 mb-2">
+						Image URL
+					</label>
+					<div class="flex gap-2">
+						<input
+							id="image-url"
+							type="url"
+							bind:value={imageUrl}
+							placeholder="https://example.com/image.jpg"
+							class="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+							disabled={isLoadingUrl}
+						/>
+						<button
+							type="button"
+							onclick={loadImageFromUrl}
+							disabled={isLoadingUrl || !imageUrl.trim()}
+							class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 active:bg-blue-800 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+							style="touch-action: manipulation;"
+						>
+							{#if isLoadingUrl}
+								<svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+								</svg>
+								<span>Loading...</span>
+							{:else}
+								<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+								</svg>
+								<span>Load</span>
+							{/if}
+						</button>
+					</div>
+					<p class="mt-3 text-xs text-gray-500">
+						Enter a direct link to an image (JPEG, PNG, WebP)
+					</p>
+				</div>
+			</div>
 		{:else}
 			<!-- Preview -->
 			<div class="space-y-4">
@@ -198,6 +341,10 @@
 				{#if files && files[0]}
 					<p class="text-center text-sm text-gray-500">
 						{files[0].name} ({(files[0].size / 1024 / 1024).toFixed(2)} MB)
+					</p>
+				{:else if urlImageBlob}
+					<p class="text-center text-sm text-gray-500 truncate max-w-md mx-auto">
+						From URL: {imageUrl}
 					</p>
 				{/if}
 
