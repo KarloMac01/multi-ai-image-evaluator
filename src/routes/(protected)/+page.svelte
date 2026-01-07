@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { goto, invalidate } from '$app/navigation';
+
 	let files: FileList | null = $state(null);
 	let isDragging = $state(false);
 	let imagePreview: string | null = $state(null);
@@ -153,8 +155,11 @@
 
 			const result = await response.json();
 
+			// Invalidate evaluations cache so history page shows new item
+			await invalidate('app:evaluations');
+
 			// Redirect to evaluation page
-			window.location.href = `/evaluation/${result.evaluation.id}`;
+			await goto(`/evaluation/${result.evaluation.id}`);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'An error occurred';
 		} finally {

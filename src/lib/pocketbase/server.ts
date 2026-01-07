@@ -80,14 +80,13 @@ export const serverPB = {
 			};
 		},
 
-		getImageUrl(evaluation: Evaluation): string {
+		getImageUrl(evaluation: Evaluation, options?: { thumb?: string }): string {
 			if (!evaluation.image) {
 				console.warn(`Evaluation ${evaluation.id} has no image`);
 				return '';
 			}
 			const pb = getServerPB();
-			const url = pb.files.getURL(evaluation, evaluation.image);
-			console.log(`Image URL for evaluation ${evaluation.id}: ${url}`);
+			const url = pb.files.getURL(evaluation, evaluation.image, options);
 			return url;
 		}
 	},

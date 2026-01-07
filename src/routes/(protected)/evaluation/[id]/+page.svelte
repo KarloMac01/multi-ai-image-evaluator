@@ -1,36 +1,36 @@
 <script lang="ts">
-	import { page } from '$app/state';
+	import { page, navigating } from '$app/state';
+	import { invalidate } from '$app/navigation';
 	import { onDestroy } from 'svelte';
-	import { untrack } from 'svelte';
 	import type { AIProvider } from '$lib/pocketbase/types';
 	import ExtractedDataView from '$lib/components/ExtractedDataView.svelte';
 	import { getClientPB, COLLECTIONS } from '$lib/pocketbase/client';
+	import type { EvaluationData, AIResultData } from './+page';
 
-	interface EvaluationData {
-		id: string;
-		product_name: string;
-		status: string;
-		created: string;
-		total_duration_ms: number;
-		imageUrl: string;
-		image: string;
-	}
+	// Track if we're navigating to another evaluation
+	let isNavigating = $derived(
+		navigating.to?.route?.id === '/(protected)/evaluation/[id]'
+	);
 
-	interface AIResultData {
-		id: string;
-		provider: AIProvider;
-		status: string;
-		extracted_data?: Record<string, unknown>;
-		formulation?: Record<string, unknown>;
-		duration_ms?: number;
-		error_message?: string;
-		tokens_used?: number;
-	}
+	// Props from load function
+	let { data } = $props();
 
-	let isLoading = $state(true);
+	// Local reactive state for realtime updates (synced from props)
 	let evaluation = $state<EvaluationData | null>(null);
 	let aiResults = $state<AIResultData[]>([]);
 	let errorMessage = $state<string | null>(null);
+
+	// Sync local state when props change (navigation or initial load)
+	$effect(() => {
+		evaluation = data.evaluation;
+		aiResults = data.aiResults;
+		errorMessage = data.error;
+	});
+
+	// Navigation from load function
+	let previousId = $derived(data.navigation.previousId);
+	let nextId = $derived(data.navigation.nextId);
+
 	let selectedProvider = $state<AIProvider | null>(null);
 	let isSubscribed = $state(false);
 	let subscribedEvaluationId: string | null = null;
@@ -64,8 +64,8 @@
 	// Get successful results only (for table view)
 	const successfulResults = $derived(aiResults.filter(r => r.status === 'completed' && r.extracted_data));
 
-	// Nested object fields that should be expanded
-	const nestedFields = ['cannabis_facts', 'drug_facts', 'supplement_facts'];
+	// Nested object fields that should be expanded into their own table sections
+	const nestedFields = ['cannabis_facts', 'cannabis_info', 'drug_facts', 'supplement_facts'];
 
 	// Check if at least one result has data for a field
 	function hasDataForField(field: string): boolean {
@@ -202,6 +202,19 @@
 		if (typeof value === 'string') return value;
 		if (typeof value === 'number') return String(value);
 		if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+		if (Array.isArray(value)) {
+			if (value.length === 0) return '';
+			// Format array items, handling nested objects
+			return value.map(item => formatSimpleValue(item)).join(', ');
+		}
+		if (typeof value === 'object') {
+			// Format object as key-value pairs
+			const entries = Object.entries(value as Record<string, unknown>);
+			if (entries.length === 0) return '';
+			return entries
+				.map(([k, v]) => `${formatFieldName(k)}: ${formatSimpleValue(v)}`)
+				.join('; ');
+		}
 		return String(value);
 	}
 
@@ -210,17 +223,18 @@
 		if (typeof item === 'string') return item;
 		if (typeof item === 'number') return String(item);
 		if (typeof item === 'boolean') return item ? 'Yes' : 'No';
+		if (Array.isArray(item)) {
+			return formatSimpleValue(item);
+		}
 		if (item && typeof item === 'object') {
 			// For objects in arrays, try to get a meaningful representation
 			const obj = item as Record<string, unknown>;
 			if ('name' in obj) return String(obj.name);
 			if ('value' in obj) return String(obj.value);
 			if ('label' in obj) return String(obj.label);
-			// Return key-value pairs for small objects
+			// Return key-value pairs using formatSimpleValue for nested values
 			const entries = Object.entries(obj);
-			if (entries.length <= 3) {
-				return entries.map(([k, v]) => `${formatFieldName(k)}: ${formatSimpleValue(v)}`).join(', ');
-			}
+			return entries.map(([k, v]) => `${formatFieldName(k)}: ${formatSimpleValue(v)}`).join(', ');
 		}
 		return String(item);
 	}
@@ -231,38 +245,6 @@
 			return Object.entries(value as Record<string, unknown>);
 		}
 		return [];
-	}
-
-	async function loadEvaluation() {
-		try {
-			isLoading = true;
-			errorMessage = null;
-
-			const response = await fetch(`/api/evaluations/${page.params.id}`);
-			const data = await response.json();
-
-			if (!response.ok) {
-				if (response.status === 404) {
-					evaluation = null;
-					return;
-				}
-				throw new Error(data.message || 'Failed to load evaluation');
-			}
-
-			evaluation = data.evaluation;
-			aiResults = data.aiResults || [];
-
-			// Set up realtime subscriptions if evaluation is still processing
-			if (evaluation && (evaluation.status === 'processing' || evaluation.status === 'pending')) {
-				await setupRealtimeSubscriptions();
-			}
-		} catch (err) {
-			console.error('Failed to load evaluation:', err);
-			errorMessage = err instanceof Error ? err.message : 'Failed to load evaluation';
-			evaluation = null;
-		} finally {
-			isLoading = false;
-		}
 	}
 
 	async function setupRealtimeSubscriptions() {
@@ -293,7 +275,7 @@
 						if (e.record.status === 'completed' || e.record.status === 'failed') {
 							cleanupSubscriptions();
 							// Reload full evaluation data to ensure everything is synced
-							await loadEvaluation();
+							await invalidate('app:evaluation');
 						}
 					}
 				}
@@ -426,8 +408,21 @@
 		}
 	}
 
+	// Set up realtime subscriptions when evaluation is processing
 	$effect(() => {
-		untrack(() => loadEvaluation());
+		if (evaluation && (evaluation.status === 'processing' || evaluation.status === 'pending')) {
+			setupRealtimeSubscriptions();
+		}
+	});
+
+	// Cleanup subscriptions when navigating away or evaluation ID changes
+	$effect(() => {
+		const currentId = page.params.id;
+		return () => {
+			if (subscribedEvaluationId && subscribedEvaluationId !== currentId) {
+				cleanupSubscriptions();
+			}
+		};
 	});
 
 	// Cleanup on component destroy
@@ -543,28 +538,72 @@
 </svelte:head>
 
 <div class="space-y-6">
-	<!-- Back button -->
-	<div>
+	<!-- Navigation header -->
+	<div class="flex items-center justify-between">
+		<!-- Back button -->
 		<a
 			href="/history"
 			class="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors"
 			style="touch-action: manipulation;"
+			data-sveltekit-preload-data="hover"
 		>
 			<svg class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
 			</svg>
 			Back to History
 		</a>
+
+		<!-- Previous/Next navigation -->
+		<div class="flex items-center gap-1">
+			{#if previousId}
+				<a
+					href="/evaluation/{previousId}"
+					class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+					style="touch-action: manipulation;"
+					aria-label="Previous evaluation"
+					data-sveltekit-preload-data="hover"
+				>
+					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+					</svg>
+					<span class="hidden sm:inline">Previous</span>
+				</a>
+			{:else}
+				<span class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-300 cursor-not-allowed">
+					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+					</svg>
+					<span class="hidden sm:inline">Previous</span>
+				</span>
+			{/if}
+
+			<span class="text-gray-300 px-1">|</span>
+
+			{#if nextId}
+				<a
+					href="/evaluation/{nextId}"
+					class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+					style="touch-action: manipulation;"
+					aria-label="Next evaluation"
+					data-sveltekit-preload-data="hover"
+				>
+					<span class="hidden sm:inline">Next</span>
+					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+					</svg>
+				</a>
+			{:else}
+				<span class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-300 cursor-not-allowed">
+					<span class="hidden sm:inline">Next</span>
+					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+					</svg>
+				</span>
+			{/if}
+		</div>
 	</div>
 
-	{#if isLoading}
-		<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 sm:p-12 text-center">
-			<div
-				class="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto"
-			></div>
-			<p class="mt-4 text-gray-600">Loading evaluation...</p>
-		</div>
-	{:else if !evaluation}
+	{#if !evaluation}
 		<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 sm:p-12 text-center">
 			<svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 				<path
@@ -586,7 +625,11 @@
 		</div>
 	{:else}
 		<!-- Evaluation details -->
-		<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+		<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 relative">
+			<!-- Loading overlay during navigation -->
+			{#if isNavigating}
+				<div class="absolute inset-0 bg-white/40 backdrop-blur-sm z-10 rounded-lg"></div>
+			{/if}
 			<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
 				<div>
 					<h1 class="text-xl sm:text-2xl font-bold text-gray-900">
@@ -972,6 +1015,16 @@
 
 <!-- Global keydown handler for lightbox -->
 <svelte:window onkeydown={handleLightboxKeydown} />
+
+<!-- Fixed loading spinner during navigation -->
+{#if isNavigating}
+	<div class="fixed inset-0 z-20 flex items-center justify-center pointer-events-none">
+		<div class="flex flex-col items-center gap-3 bg-white/90 backdrop-blur-sm px-6 py-4 rounded-xl shadow-lg">
+			<div class="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full"></div>
+			<span class="text-sm font-medium text-gray-700">Loading...</span>
+		</div>
+	</div>
+{/if}
 
 <!-- Lightbox Modal -->
 {#if lightboxOpen && evaluation?.imageUrl}
