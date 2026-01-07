@@ -12,6 +12,7 @@
 | [EXTRACTION_PROMPT.md](./EXTRACTION_PROMPT.md) | AI prompt strategy for label extraction |
 | [API_REFERENCE.md](./API_REFERENCE.md) | API endpoint documentation |
 | [ITERATIONS.md](./ITERATIONS.md) | Development iterations and improvements log |
+| [PLAN_HISTORY_TABLE.md](./PLAN_HISTORY_TABLE.md) | Plan for history list table view improvements |
 
 ---
 

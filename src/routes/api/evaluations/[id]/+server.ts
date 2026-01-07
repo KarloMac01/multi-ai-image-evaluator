@@ -1,6 +1,8 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { serverPB } from '$lib/pocketbase/server';
+import { serverPB, getServerPB } from '$lib/pocketbase/server';
+import { COLLECTIONS } from '$lib/pocketbase/client';
+import type { Evaluation } from '$lib/pocketbase/types';
 
 export const GET: RequestHandler = async ({ params, locals }) => {
 	// Check authentication
@@ -27,6 +29,38 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 		// Get image URL
 		const imageUrl = serverPB.evaluations.getImageUrl(evaluation);
 
+		// Get previous and next evaluation IDs for navigation
+		// List is sorted by -created (newest first), so:
+		// - Previous: evaluation created AFTER current (newer, earlier in list)
+		// - Next: evaluation created BEFORE current (older, later in list)
+		const pb = getServerPB();
+
+		let previousId: string | null = null;
+		let nextId: string | null = null;
+
+		try {
+			// Get previous (newer) evaluation
+			const newerResult = await pb.collection(COLLECTIONS.EVALUATIONS).getList<Evaluation>(1, 1, {
+				filter: `created > "${evaluation.created}"`,
+				sort: 'created' // Ascending to get the closest newer one
+			});
+			if (newerResult.items.length > 0) {
+				previousId = newerResult.items[0].id;
+			}
+
+			// Get next (older) evaluation
+			const olderResult = await pb.collection(COLLECTIONS.EVALUATIONS).getList<Evaluation>(1, 1, {
+				filter: `created < "${evaluation.created}"`,
+				sort: '-created' // Descending to get the closest older one
+			});
+			if (olderResult.items.length > 0) {
+				nextId = olderResult.items[0].id;
+			}
+		} catch (navErr) {
+			console.error('Error fetching navigation:', navErr);
+			// Continue without navigation - not critical
+		}
+
 		return json({
 			success: true,
 			evaluation: {
@@ -34,7 +68,11 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 				imageUrl
 			},
 			aiResults,
-			webResults
+			webResults,
+			navigation: {
+				previousId,
+				nextId
+			}
 		});
 	} catch (err) {
 		console.error(`Evaluation ${id} fetch error:`, err);
