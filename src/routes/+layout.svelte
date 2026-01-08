@@ -2,6 +2,7 @@
 	import '../app.css';
 	import { page } from '$app/state';
 	import MobileNav from '$lib/components/MobileNav.svelte';
+	import PWAPrompt from '$lib/components/PWAPrompt.svelte';
 	import type { RecordModel } from 'pocketbase';
 
 	interface Props {
@@ -147,4 +148,7 @@
 			</p>
 		</div>
 	</footer>
+
+	<!-- PWA Update Prompt -->
+	<PWAPrompt />
 </div>
