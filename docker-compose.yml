@@ -12,6 +12,7 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - HOST=0.0.0.0
+      - BODY_SIZE_LIMIT=10M
       # Pocketbase
       - PUBLIC_POCKETBASE_URL=${PUBLIC_POCKETBASE_URL}
       - POCKETBASE_SERVER_API_KEY=${POCKETBASE_SERVER_API_KEY}
