@@ -4,7 +4,6 @@
 	import { onDestroy } from 'svelte';
 	import type { AIProvider } from '$lib/pocketbase/types';
 	import ExtractedDataView from '$lib/components/ExtractedDataView.svelte';
-	import { getClientPB, COLLECTIONS } from '$lib/pocketbase/client';
 	import type { EvaluationData, AIResultData } from './+page';
 
 	// Track if we're navigating to another evaluation
@@ -32,8 +31,11 @@
 	let nextId = $derived(data.navigation.nextId);
 
 	let selectedProvider = $state<AIProvider | null>(null);
-	let isSubscribed = $state(false);
-	let subscribedEvaluationId: string | null = null;
+
+	// Polling state (replaces PocketBase subscriptions)
+	let isPolling = $state(false);
+	let pollingIntervalId: ReturnType<typeof setInterval> | null = null;
+	const POLLING_INTERVAL_MS = 2000; // Poll every 2 seconds
 
 	// Re-evaluation state
 	let isReEvaluating = $state(false);
@@ -247,112 +249,64 @@
 		return [];
 	}
 
-	async function setupRealtimeSubscriptions() {
-		if (isSubscribed) return;
-
+	// Polling function to fetch latest evaluation data
+	async function pollEvaluationStatus() {
 		const evaluationId = page.params.id;
 		if (!evaluationId) return;
 
 		try {
-			const pb = getClientPB();
-			subscribedEvaluationId = evaluationId;
+			const response = await fetch(`/api/evaluations/${evaluationId}`);
+			if (!response.ok) {
+				console.error('Failed to poll evaluation status');
+				return;
+			}
 
-			// Subscribe to evaluation changes
-			pb.collection(COLLECTIONS.EVALUATIONS).subscribe(
-				evaluationId,
-				async (e) => {
-					console.log('Evaluation updated:', e.action, e.record);
-					if (e.action === 'update' && evaluation) {
-						// Update evaluation data
-						evaluation = {
-							...evaluation,
-							status: e.record.status,
-							product_name: e.record.product_name,
-							total_duration_ms: e.record.total_duration_ms
-						};
+			const data = await response.json();
 
-						// If completed or failed, reload full data and unsubscribe
-						if (e.record.status === 'completed' || e.record.status === 'failed') {
-							cleanupSubscriptions();
-							// Reload full evaluation data to ensure everything is synced
-							await invalidate('app:evaluation');
-						}
-					}
+			if (data.evaluation) {
+				// Update evaluation data
+				evaluation = data.evaluation;
+
+				// Update AI results
+				if (data.aiResults) {
+					aiResults = data.aiResults;
 				}
-			);
 
-			// Subscribe to new AI results for this evaluation
-			pb.collection(COLLECTIONS.AI_RESULTS).subscribe(
-				'*',
-				(e) => {
-					if (e.record.evaluation !== evaluationId) return;
-
-					console.log('AI Result event:', e.action, e.record.provider);
-
-					if (e.action === 'create') {
-						// Add new result
-						const newResult: AIResultData = {
-							id: e.record.id,
-							provider: e.record.provider,
-							status: e.record.status,
-							extracted_data: e.record.extracted_data,
-							formulation: e.record.formulation,
-							duration_ms: e.record.duration_ms,
-							error_message: e.record.error_message,
-							tokens_used: e.record.tokens_used
-						};
-
-						// Check if already exists (avoid duplicates)
-						const exists = aiResults.some(r => r.id === newResult.id);
-						if (!exists) {
-							aiResults = [...aiResults, newResult];
-						}
-					} else if (e.action === 'update') {
-						// Update existing result
-						aiResults = aiResults.map(r =>
-							r.id === e.record.id
-								? {
-										...r,
-										status: e.record.status,
-										extracted_data: e.record.extracted_data,
-										formulation: e.record.formulation,
-										duration_ms: e.record.duration_ms,
-										error_message: e.record.error_message,
-										tokens_used: e.record.tokens_used
-									}
-								: r
-						);
-					}
+				// Stop polling if evaluation is completed or failed
+				if (data.evaluation.status === 'completed' || data.evaluation.status === 'failed') {
+					stopPolling();
+					// Invalidate to ensure SvelteKit cache is updated
+					await invalidate('app:evaluation');
 				}
-			);
-
-			isSubscribed = true;
-			console.log('Realtime subscriptions active for evaluation:', evaluationId);
+			}
 		} catch (err) {
-			console.error('Failed to set up realtime subscriptions:', err);
+			console.error('Error polling evaluation status:', err);
 		}
 	}
 
-	function cleanupSubscriptions() {
-		if (!isSubscribed) return;
+	// Start polling for evaluation updates
+	function startPolling() {
+		if (isPolling) return;
 
-		try {
-			const pb = getClientPB();
+		const evaluationId = page.params.id;
+		if (!evaluationId) return;
 
-			// Unsubscribe from evaluation changes
-			if (subscribedEvaluationId) {
-				pb.collection(COLLECTIONS.EVALUATIONS).unsubscribe(subscribedEvaluationId);
-			}
+		isPolling = true;
+		console.log('Starting polling for evaluation:', evaluationId);
 
-			// Unsubscribe from all AI results subscriptions
-			pb.collection(COLLECTIONS.AI_RESULTS).unsubscribe('*');
+		// Poll immediately, then at intervals
+		pollEvaluationStatus();
+		pollingIntervalId = setInterval(pollEvaluationStatus, POLLING_INTERVAL_MS);
+	}
 
-			subscribedEvaluationId = null;
-			isSubscribed = false;
-			console.log('Realtime subscriptions cleaned up');
-		} catch (err) {
-			console.error('Error cleaning up subscriptions:', err);
+	// Stop polling
+	function stopPolling() {
+		if (pollingIntervalId) {
+			clearInterval(pollingIntervalId);
+			pollingIntervalId = null;
 		}
+		isPolling = false;
+		console.log('Polling stopped');
 	}
 
 	async function reEvaluateProvider(provider: AIProvider) {
@@ -372,8 +326,8 @@
 				throw new Error(data.message || 'Failed to start re-evaluation');
 			}
 
-			// Set up realtime subscriptions to get updates
-			await setupRealtimeSubscriptions();
+			// Start polling to get updates
+			startPolling();
 		} catch (err) {
 			console.error('Re-evaluation failed:', err);
 			errorMessage = err instanceof Error ? err.message : 'Re-evaluation failed';
@@ -398,8 +352,8 @@
 				throw new Error(data.message || 'Failed to start re-evaluation');
 			}
 
-			// Set up realtime subscriptions to get updates
-			await setupRealtimeSubscriptions();
+			// Start polling to get updates
+			startPolling();
 		} catch (err) {
 			console.error('Re-evaluation failed:', err);
 			errorMessage = err instanceof Error ? err.message : 'Re-evaluation failed';
@@ -408,26 +362,25 @@
 		}
 	}
 
-	// Set up realtime subscriptions when evaluation is processing
+	// Start polling when evaluation is processing
 	$effect(() => {
 		if (evaluation && (evaluation.status === 'processing' || evaluation.status === 'pending')) {
-			setupRealtimeSubscriptions();
+			startPolling();
 		}
 	});
 
-	// Cleanup subscriptions when navigating away or evaluation ID changes
+	// Cleanup polling when navigating away or evaluation ID changes
 	$effect(() => {
 		const currentId = page.params.id;
 		return () => {
-			if (subscribedEvaluationId && subscribedEvaluationId !== currentId) {
-				cleanupSubscriptions();
-			}
+			// Stop polling when evaluation ID changes
+			stopPolling();
 		};
 	});
 
 	// Cleanup on component destroy
 	onDestroy(() => {
-		cleanupSubscriptions();
+		stopPolling();
 	});
 
 	// Provider display names and colors
@@ -642,13 +595,13 @@
 					</p>
 				</div>
 				<div class="flex items-center gap-2 self-start">
-					{#if isSubscribed}
+					{#if isPolling}
 						<span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
 							<span class="relative flex h-2 w-2">
 								<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
 								<span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
 							</span>
-							Live
+							Updating
 						</span>
 					{/if}
 					<span
