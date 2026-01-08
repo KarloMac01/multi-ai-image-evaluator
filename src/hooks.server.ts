@@ -1,11 +1,11 @@
 import type { Handle } from '@sveltejs/kit';
 import PocketBase from 'pocketbase';
-import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 import { dev } from '$app/environment';
 
 export const handle: Handle = async ({ event, resolve }) => {
 	// Create PocketBase instance for this request
-	event.locals.pb = new PocketBase(PUBLIC_POCKETBASE_URL);
+	event.locals.pb = new PocketBase(env.PUBLIC_POCKETBASE_URL);
 
 	// Load auth state from cookie
 	const cookie = event.request.headers.get('cookie') || '';

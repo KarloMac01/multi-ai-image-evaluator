@@ -1,6 +1,6 @@
 import PocketBase from 'pocketbase';
-import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
-import { POCKETBASE_SERVER_API_KEY } from '$env/static/private';
+import { env as publicEnv } from '$env/dynamic/public';
+import { env as privateEnv } from '$env/dynamic/private';
 import type {
 	Evaluation,
 	AIResult,
@@ -17,14 +17,14 @@ import { COLLECTIONS } from './client';
 
 // Server-side PocketBase instance with API key
 export function getServerPB(): PocketBase {
-	const pb = new PocketBase(PUBLIC_POCKETBASE_URL);
+	const pb = new PocketBase(publicEnv.PUBLIC_POCKETBASE_URL);
 
 	// Add API key header for server requests
-	if (POCKETBASE_SERVER_API_KEY) {
+	if (privateEnv.POCKETBASE_SERVER_API_KEY) {
 		pb.beforeSend = function (url, options) {
 			options.headers = {
 				...options.headers,
-				'x-api-key': POCKETBASE_SERVER_API_KEY
+				'x-api-key': privateEnv.POCKETBASE_SERVER_API_KEY
 			};
 			return { url, options };
 		};

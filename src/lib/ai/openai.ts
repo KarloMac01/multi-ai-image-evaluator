@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { OPENAI_API_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { BaseAIService, withRetry } from './base';
 import type { AIProvider } from '$lib/pocketbase/types';
 
@@ -11,7 +11,9 @@ import type { AIProvider } from '$lib/pocketbase/types';
 export class OpenAIService extends BaseAIService {
 	readonly name: AIProvider = 'openai';
 	readonly displayName = 'OpenAI (GPT-4o)';
-	protected readonly apiKey = OPENAI_API_KEY || '';
+	protected get apiKey(): string {
+		return env.OPENAI_API_KEY || '';
+	}
 
 	private client: OpenAI | null = null;
 

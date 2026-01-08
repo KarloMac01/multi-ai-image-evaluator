@@ -1,4 +1,4 @@
-import { GOOGLE_CLOUD_API_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { BaseAIService, withRetry } from './base';
 import type { AIProvider } from '$lib/pocketbase/types';
 
@@ -13,7 +13,9 @@ import type { AIProvider } from '$lib/pocketbase/types';
 export class CloudVisionService extends BaseAIService {
 	readonly name: AIProvider = 'cloudvision';
 	readonly displayName = 'Google Cloud Vision';
-	protected readonly apiKey = GOOGLE_CLOUD_API_KEY || '';
+	protected get apiKey(): string {
+		return env.GOOGLE_CLOUD_API_KEY || '';
+	}
 
 	private readonly baseUrl = 'https://vision.googleapis.com/v1/images:annotate';
 

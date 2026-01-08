@@ -1,5 +1,5 @@
 import Groq from 'groq-sdk';
-import { GROQ_API_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { BaseAIService, withRetry } from './base';
 import type { AIProvider } from '$lib/pocketbase/types';
 
@@ -11,7 +11,9 @@ import type { AIProvider } from '$lib/pocketbase/types';
 export class GroqService extends BaseAIService {
 	readonly name: AIProvider = 'groq';
 	readonly displayName = 'Groq (Llama 4)';
-	protected readonly apiKey = GROQ_API_KEY || '';
+	protected get apiKey(): string {
+		return env.GROQ_API_KEY || '';
+	}
 
 	private client: Groq | null = null;
 
