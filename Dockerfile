@@ -1,64 +1,39 @@
-# Multi-stage Dockerfile for SvelteKit with adapter-node
-# Optimized for Coolify deployment
-
-# ============================================
-# Stage 1: Dependencies
-# ============================================
-FROM node:22-alpine AS deps
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
 # Copy package files
-COPY package.json package-lock.json* ./
+COPY package*.json ./
 
-# Install all dependencies (including devDependencies for build)
+# Install dependencies
 RUN npm ci
 
-# ============================================
-# Stage 2: Build
-# ============================================
-FROM node:22-alpine AS builder
-
-WORKDIR /app
-
-# Copy dependencies from deps stage
-COPY --from=deps /app/node_modules ./node_modules
-
-# Copy source code
+# Copy source files
 COPY . .
 
 # Build the application
 RUN npm run build
 
-# Prune dev dependencies
+# Remove dev dependencies
 RUN npm prune --production
 
-# ============================================
-# Stage 3: Production
-# ============================================
-FROM node:22-alpine AS runner
+# Production stage
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Create non-root user for security
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 sveltekit
-
-# Set production environment
-ENV NODE_ENV=production
-ENV PORT=3000
-ENV HOST=0.0.0.0
-
 # Copy built application
-COPY --from=builder --chown=sveltekit:nodejs /app/build ./build
-COPY --from=builder --chown=sveltekit:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=sveltekit:nodejs /app/package.json ./package.json
-
-# Switch to non-root user
-USER sveltekit
+COPY --from=builder /app/build ./build
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
 
 # Expose the port
 EXPOSE 3000
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOST=0.0.0.0
 
 # Start the application
 CMD ["node", "build"]
