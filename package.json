@@ -17,6 +17,7 @@
 		"@sveltejs/vite-plugin-svelte": "^6.2.1",
 		"autoprefixer": "^10.4.23",
 		"postcss": "^8.5.6",
+		"sharp": "^0.34.5",
 		"svelte": "^5.45.6",
 		"svelte-check": "^4.3.4",
 		"tailwindcss": "^4.1.18",
@@ -28,9 +29,11 @@
 		"@google/generative-ai": "^0.24.1",
 		"@sveltejs/adapter-node": "^5.4.0",
 		"@tailwindcss/postcss": "^4.1.18",
+		"@vite-pwa/sveltekit": "^1.1.0",
 		"chart.js": "^4.5.1",
 		"groq-sdk": "^0.37.0",
 		"openai": "^6.15.0",
-		"pocketbase": "^0.26.5"
+		"pocketbase": "^0.26.5",
+		"workbox-window": "^7.4.0"
 	}
 }
