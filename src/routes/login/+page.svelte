@@ -7,12 +7,11 @@
 
 	let { form }: Props = $props();
 
-	let isLogin = $state(true);
 	let isSubmitting = $state(false);
 </script>
 
 <svelte:head>
-	<title>{isLogin ? 'Sign In' : 'Create Account'} | Multi-AI Label Evaluator</title>
+	<title>Sign In | Multi-AI Label Evaluator</title>
 </svelte:head>
 
 <div class="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-8 sm:py-12">
@@ -34,12 +33,8 @@
 					/>
 				</svg>
 			</div>
-			<h1 class="text-2xl sm:text-3xl font-bold text-gray-900">
-				{isLogin ? 'Welcome Back' : 'Create Account'}
-			</h1>
-			<p class="mt-2 text-sm sm:text-base text-gray-600">
-				{isLogin ? 'Sign in to analyze product labels' : 'Get started with your account'}
-			</p>
+			<h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Welcome Back</h1>
+			<p class="mt-2 text-sm sm:text-base text-gray-600">Sign in to analyze product labels</p>
 		</div>
 
 		<!-- Form Card -->
@@ -52,7 +47,7 @@
 
 			<form
 				method="POST"
-				action={isLogin ? '?/login' : '?/register'}
+				action="?/login"
 				use:enhance={() => {
 					isSubmitting = true;
 					return async ({ update }) => {
@@ -85,28 +80,11 @@
 						id="password"
 						name="password"
 						required
-						autocomplete={isLogin ? 'current-password' : 'new-password'}
+						autocomplete="current-password"
 						class="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base outline-none transition-shadow"
 						placeholder="Enter your password"
 					/>
 				</div>
-
-				{#if !isLogin}
-					<div>
-						<label for="passwordConfirm" class="block text-sm font-medium text-gray-700 mb-1.5">
-							Confirm Password
-						</label>
-						<input
-							type="password"
-							id="passwordConfirm"
-							name="passwordConfirm"
-							required
-							autocomplete="new-password"
-							class="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base outline-none transition-shadow"
-							placeholder="Confirm your password"
-						/>
-					</div>
-				{/if}
 
 				<button
 					type="submit"
@@ -135,26 +113,14 @@
 									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 								></path>
 							</svg>
-							{isLogin ? 'Signing in...' : 'Creating account...'}
+							Signing in...
 						</span>
 					{:else}
-						{isLogin ? 'Sign In' : 'Create Account'}
+						Sign In
 					{/if}
 				</button>
 			</form>
 		</div>
 
-		<!-- Toggle Login/Register -->
-		<p class="mt-4 sm:mt-6 text-center text-sm text-gray-600">
-			{isLogin ? "Don't have an account?" : 'Already have an account?'}
-			<button
-				type="button"
-				onclick={() => (isLogin = !isLogin)}
-				class="ml-1 text-blue-600 hover:text-blue-800 font-medium"
-				style="touch-action: manipulation;"
-			>
-				{isLogin ? 'Sign up' : 'Sign in'}
-			</button>
-		</p>
 	</div>
 </div>

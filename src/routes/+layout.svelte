@@ -58,6 +58,15 @@
 							Evaluate
 						</a>
 						<a
+							href="/dashboard"
+							class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors {page
+								.url.pathname === '/dashboard'
+								? 'text-blue-600 bg-blue-50'
+								: ''}"
+						>
+							Dashboard
+						</a>
+						<a
 							href="/history"
 							class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors {page
 								.url.pathname === '/history'

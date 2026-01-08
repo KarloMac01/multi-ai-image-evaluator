@@ -2,9 +2,9 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	// Redirect to home if already logged in
+	// Redirect to dashboard if already logged in
 	if (locals.user) {
-		redirect(303, '/');
+		redirect(303, '/dashboard');
 	}
 	return {};
 };
@@ -32,55 +32,14 @@ export const actions: Actions = {
 			});
 		}
 
-		redirect(303, '/');
+		redirect(303, '/dashboard');
 	},
 
-	register: async ({ request, locals }) => {
-		const data = await request.formData();
-		const email = data.get('email') as string;
-		const password = data.get('password') as string;
-		const passwordConfirm = data.get('passwordConfirm') as string;
-
-		if (!email || !password || !passwordConfirm) {
-			return fail(400, {
-				error: 'All fields are required',
-				email
-			});
-		}
-
-		if (password !== passwordConfirm) {
-			return fail(400, {
-				error: 'Passwords do not match',
-				email
-			});
-		}
-
-		if (password.length < 8) {
-			return fail(400, {
-				error: 'Password must be at least 8 characters',
-				email
-			});
-		}
-
-		try {
-			await locals.pb.collection('users').create({
-				email,
-				password,
-				passwordConfirm
-			});
-
-			// Auto-login after registration
-			await locals.pb.collection('users').authWithPassword(email, password);
-		} catch (err: unknown) {
-			console.error('Registration error:', err);
-			const message = err instanceof Error ? err.message : 'Registration failed';
-			return fail(400, {
-				error: message,
-				email
-			});
-		}
-
-		redirect(303, '/');
+	// Registration temporarily disabled - users are pre-determined
+	register: async () => {
+		return fail(403, {
+			error: 'Registration is currently disabled. Please contact an administrator.'
+		});
 	},
 
 	logout: async ({ locals, cookies }) => {
