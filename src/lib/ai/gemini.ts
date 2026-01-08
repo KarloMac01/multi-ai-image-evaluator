@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { GEMINI_API_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { BaseAIService, withRetry } from './base';
 import type { AIProvider } from '$lib/pocketbase/types';
 
@@ -11,7 +11,9 @@ import type { AIProvider } from '$lib/pocketbase/types';
 export class GeminiService extends BaseAIService {
 	readonly name: AIProvider = 'gemini';
 	readonly displayName = 'Google Gemini';
-	protected readonly apiKey = GEMINI_API_KEY || '';
+	protected get apiKey(): string {
+		return env.GEMINI_API_KEY || '';
+	}
 
 	private client: GoogleGenerativeAI | null = null;
 

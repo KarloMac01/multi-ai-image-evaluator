@@ -1,5 +1,5 @@
 import PocketBase from 'pocketbase';
-import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 import { browser } from '$app/environment';
 import type {
 	Evaluation,
@@ -13,7 +13,7 @@ import type {
 
 // Client-side PocketBase instance
 export function createPocketBase(): PocketBase {
-	const pb = new PocketBase(PUBLIC_POCKETBASE_URL);
+	const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL);
 
 	// Load auth from cookie on browser
 	if (browser) {

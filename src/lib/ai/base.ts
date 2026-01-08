@@ -10,7 +10,7 @@ import { EXTRACTION_PROMPT, getExtractionPromptForProvider } from './prompt';
 export abstract class BaseAIService implements AIService {
 	abstract readonly name: AIProvider;
 	abstract readonly displayName: string;
-	protected abstract readonly apiKey: string;
+	protected abstract get apiKey(): string;
 
 	abstract isConfigured(): boolean;
 

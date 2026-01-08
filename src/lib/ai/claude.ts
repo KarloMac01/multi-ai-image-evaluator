@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { ANTHROPIC_API_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { BaseAIService, withRetry } from './base';
 import type { AIProvider } from '$lib/pocketbase/types';
 
@@ -11,7 +11,9 @@ import type { AIProvider } from '$lib/pocketbase/types';
 export class ClaudeService extends BaseAIService {
 	readonly name: AIProvider = 'claude';
 	readonly displayName = 'Anthropic Claude';
-	protected readonly apiKey = ANTHROPIC_API_KEY || '';
+	protected get apiKey(): string {
+		return env.ANTHROPIC_API_KEY || '';
+	}
 
 	private client: Anthropic | null = null;
 
