@@ -28,6 +28,7 @@
 		"@google/generative-ai": "^0.24.1",
 		"@sveltejs/adapter-node": "^5.4.0",
 		"@tailwindcss/postcss": "^4.1.18",
+		"chart.js": "^4.5.1",
 		"groq-sdk": "^0.37.0",
 		"openai": "^6.15.0",
 		"pocketbase": "^0.26.5"
