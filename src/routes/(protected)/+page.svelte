@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto, invalidate } from '$app/navigation';
+	import ImageEditor from '$lib/components/ImageEditor.svelte';
 
 	let files: FileList | null = $state(null);
 	let isDragging = $state(false);
@@ -12,6 +13,13 @@
 	let imageUrl = $state('');
 	let isLoadingUrl = $state(false);
 	let urlImageBlob: Blob | null = $state(null);
+
+	// Image editor state
+	let showEditor = $state(false);
+	let editedBlob: Blob | null = $state(null);
+
+	// The final blob to submit (either original or edited)
+	let finalBlob = $derived(editedBlob || urlImageBlob);
 
 	function handleDragOver(e: DragEvent) {
 		e.preventDefault();
@@ -56,6 +64,7 @@
 
 		error = null;
 		files = selectedFiles;
+		editedBlob = null; // Reset any previous edits
 
 		// Create preview
 		const reader = new FileReader();
@@ -71,6 +80,8 @@
 		error = null;
 		imageUrl = '';
 		urlImageBlob = null;
+		editedBlob = null;
+		showEditor = false;
 	}
 
 	async function loadImageFromUrl() {
@@ -103,6 +114,7 @@
 			}
 
 			urlImageBlob = blob;
+			editedBlob = null; // Reset any previous edits
 
 			// Create preview
 			const reader = new FileReader();
@@ -118,12 +130,32 @@
 		}
 	}
 
-	async function handleSubmit() {
-		// Check if we have either a file or a URL blob
-		const hasFile = files && files.length > 0;
-		const hasUrlBlob = urlImageBlob !== null;
+	function openEditor() {
+		showEditor = true;
+	}
 
-		if (!hasFile && !hasUrlBlob) {
+	function handleEditorConfirm(blob: Blob) {
+		editedBlob = blob;
+		showEditor = false;
+
+		// Update preview with edited image
+		const reader = new FileReader();
+		reader.onload = (e) => {
+			imagePreview = e.target?.result as string;
+		};
+		reader.readAsDataURL(blob);
+	}
+
+	function handleEditorCancel() {
+		showEditor = false;
+	}
+
+	async function handleSubmit() {
+		// Check if we have either a file or a blob (URL or edited)
+		const hasFile = files && files.length > 0 && !editedBlob;
+		const hasBlob = finalBlob !== null || editedBlob !== null;
+
+		if (!hasFile && !hasBlob) {
 			error = 'Please select an image first';
 			return;
 		}
@@ -134,12 +166,17 @@
 		try {
 			const formData = new FormData();
 
-			if (hasFile) {
+			if (editedBlob) {
+				// Use edited image
+				const fileName = files?.[0]?.name || imageUrl.split('/').pop()?.split('?')[0] || 'edited-image.jpg';
+				const file = new File([editedBlob], fileName, { type: 'image/jpeg' });
+				formData.append('image', file);
+			} else if (hasFile) {
 				formData.append('image', files![0]);
-			} else if (hasUrlBlob) {
-				// Create a File from the blob with a proper name
+			} else if (urlImageBlob) {
+				// Use URL blob
 				const fileName = imageUrl.split('/').pop()?.split('?')[0] || 'image.jpg';
-				const file = new File([urlImageBlob!], fileName, { type: urlImageBlob!.type });
+				const file = new File([urlImageBlob], fileName, { type: urlImageBlob.type });
 				formData.append('image', file);
 			}
 
@@ -171,6 +208,15 @@
 <svelte:head>
 	<title>Evaluate | Multi-AI Label Evaluator</title>
 </svelte:head>
+
+<!-- Image Editor Modal -->
+{#if showEditor && imagePreview}
+	<ImageEditor
+		imageUrl={imagePreview}
+		onConfirm={handleEditorConfirm}
+		onCancel={handleEditorCancel}
+	/>
+{/if}
 
 <div class="space-y-6 sm:space-y-8">
 	<!-- Hero Section -->
@@ -317,7 +363,7 @@
 				</div>
 			</div>
 		{:else}
-			<!-- Preview -->
+			<!-- Preview with Edit Option -->
 			<div class="space-y-4">
 				<div class="relative">
 					<img
@@ -341,24 +387,50 @@
 							/>
 						</svg>
 					</button>
+
+					<!-- Edit badge if edited -->
+					{#if editedBlob}
+						<span class="absolute top-2 left-2 px-2 py-1 bg-green-500 text-white text-xs font-medium rounded-full">
+							Edited
+						</span>
+					{/if}
 				</div>
 
-				{#if files && files[0]}
+				{#if files && files[0] && !editedBlob}
 					<p class="text-center text-sm text-gray-500">
 						{files[0].name} ({(files[0].size / 1024 / 1024).toFixed(2)} MB)
 					</p>
-				{:else if urlImageBlob}
+				{:else if urlImageBlob && !editedBlob}
 					<p class="text-center text-sm text-gray-500 truncate max-w-md mx-auto">
 						From URL: {imageUrl}
 					</p>
+				{:else if editedBlob}
+					<p class="text-center text-sm text-gray-500">
+						Image has been cropped/enhanced
+					</p>
 				{/if}
 
-				<div class="flex justify-center">
+				<div class="flex flex-col sm:flex-row justify-center gap-3">
+					<!-- Edit Button -->
+					<button
+						type="button"
+						onclick={openEditor}
+						disabled={isUploading}
+						class="px-5 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 active:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+						style="touch-action: manipulation;"
+					>
+						<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+						</svg>
+						<span>Crop & Enhance</span>
+					</button>
+
+					<!-- Submit Button -->
 					<button
 						type="button"
 						onclick={handleSubmit}
 						disabled={isUploading}
-						class="w-full sm:w-auto px-6 py-3 sm:py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 active:bg-blue-800 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+						class="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 active:bg-blue-800 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
 						style="touch-action: manipulation;"
 					>
 						{#if isUploading}
@@ -391,6 +463,11 @@
 						{/if}
 					</button>
 				</div>
+
+				<!-- Tip -->
+				<p class="text-center text-xs text-gray-400">
+					Tip: Use "Crop & Enhance" to focus on the label area for better AI results
+				</p>
 			</div>
 		{/if}
 

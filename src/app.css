@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "cropperjs/dist/cropper.css";
 
 /* Custom breakpoint for extra small screens */
 @custom-media --xs (min-width: 475px);
