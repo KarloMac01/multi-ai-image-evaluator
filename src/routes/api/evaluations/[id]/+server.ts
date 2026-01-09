@@ -2,7 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { serverPB, getServerPB } from '$lib/pocketbase/server';
 import { COLLECTIONS } from '$lib/pocketbase/client';
-import type { Evaluation } from '$lib/pocketbase/types';
+import type { Evaluation, AIResult, WebResult } from '$lib/pocketbase/types';
 
 export const GET: RequestHandler = async ({ params, locals }) => {
 	// Check authentication
@@ -87,5 +87,71 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 		}
 
 		throw error(500, 'An error occurred while fetching the evaluation');
+	}
+};
+
+export const DELETE: RequestHandler = async ({ params, locals }) => {
+	// Check authentication
+	if (!locals.user) {
+		throw error(401, 'Authentication required');
+	}
+
+	const { id } = params;
+
+	if (!id) {
+		throw error(400, 'Evaluation ID is required');
+	}
+
+	const pb = getServerPB();
+
+	try {
+		// First, verify the evaluation exists
+		const evaluation = await pb.collection(COLLECTIONS.EVALUATIONS).getOne<Evaluation>(id);
+
+		// Delete associated AI results first
+		try {
+			const aiResults = await pb.collection(COLLECTIONS.AI_RESULTS).getFullList<AIResult>({
+				filter: `evaluation = "${id}"`
+			});
+			for (const result of aiResults) {
+				await pb.collection(COLLECTIONS.AI_RESULTS).delete(result.id);
+			}
+		} catch (err) {
+			console.error('Error deleting AI results:', err);
+			// Continue with deletion even if AI results fail
+		}
+
+		// Delete associated web results
+		try {
+			const webResults = await pb.collection(COLLECTIONS.WEB_RESULTS).getFullList<WebResult>({
+				filter: `evaluation = "${id}"`
+			});
+			for (const result of webResults) {
+				await pb.collection(COLLECTIONS.WEB_RESULTS).delete(result.id);
+			}
+		} catch (err) {
+			console.error('Error deleting web results:', err);
+			// Continue with deletion even if web results fail
+		}
+
+		// Delete the evaluation (this will also delete the associated image file)
+		await pb.collection(COLLECTIONS.EVALUATIONS).delete(id);
+
+		return json({
+			success: true,
+			message: 'Evaluation deleted successfully'
+		});
+	} catch (err) {
+		console.error(`Evaluation ${id} delete error:`, err);
+
+		if (err && typeof err === 'object' && 'status' in err) {
+			const pbError = err as { status: number };
+			if (pbError.status === 404) {
+				throw error(404, 'Evaluation not found');
+			}
+			throw err;
+		}
+
+		throw error(500, 'An error occurred while deleting the evaluation');
 	}
 };
